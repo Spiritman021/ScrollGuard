@@ -7,6 +7,7 @@
         tools:ignore="ProtectedPermissions" />
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -34,8 +35,8 @@
         </activity>
 
         <service
-            android:exported="true"
             android:name=".settings.YourAccessibilityService"
+            android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

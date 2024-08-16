@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,19 +49,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tworoot2.scrollguard.presentation.ui.components.CustomToggleButton
 import com.tworoot2.scrollguard.presentation.ui.components.SimpleArcProgressbar
+import com.tworoot2.scrollguard.presentation.ui.viewmodels.PermissionsViewModel
 import com.tworoot2.scrollguard.settings.AppSettings
 import com.tworoot2.scrollguard.settings.MyAppPermissions
+import com.tworoot2.scrollguard.settings.YourAccessibilityService
 import com.tworoot2.scrollguard.ui.theme.ScrollingBlockTheme
 import com.tworoot2.scrollguard.ui.theme.Ui_1
 import com.tworoot2.scrollguard.ui.theme.Ui_2
 import com.tworoot2.scrollguard.ui.theme.Ui_RED_1
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    
+    private val permissionsViewModel: PermissionsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+
         setContent {
             ScrollingBlockTheme {
                 Column(
@@ -83,7 +94,7 @@ class MainActivity : ComponentActivity() {
                     val usageEvent = UsageEvents.Event()
                     val nonSystemApps = AppSettings.getNonSystemAppsList(this@MainActivity)
                     Log.e("InstalledAppsCount", nonSystemApps.size.toString())
-                    while (usageEvents.hasNextEvent() ) {
+                    while (usageEvents.hasNextEvent()) {
                         usageEvents.getNextEvent(usageEvent)
                         if (nonSystemApps.contains(usageEvent.packageName)) {
                             Log.e("APP", "${usageEvent.packageName} ${usageEvent.timeStamp}")
@@ -100,49 +111,88 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        permissionsViewModel.checkPermissions()
+    }
 
-}
 
-@Preview
-@Composable
-fun MainScreenLayout(modifier: Modifier = Modifier) {
-    Column(
-        modifier
-            .background(Color.Black)
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(10.dp)
-    ) {
+    @Preview
+    @Composable
+    fun MainScreenLayout(modifier: Modifier = Modifier) {
+        Column(
+            modifier
+                .background(Color.Black)
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(10.dp)
+        ) {
+
+            CustomToolBar()
+
+            TimerProgressLayout()
+
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "Permissions ",
+                color = Color.White,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            AllPermissionLayout(permissionsViewModel)
+
+
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "Applications ",
+                color = Color.White,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SelectApplicationLayout(
+                text = "Instagram",
+                image = painterResource(R.drawable.instagram),
+                onUpdate = {
+
+                })
+
+            SelectApplicationLayout(
+                text = "Youtube",
+                image = painterResource(R.drawable.youtube),
+                onUpdate = {
+
+                })
+
+        }
+    }
+
+
+    @Composable
+    fun AllPermissionLayout(permissionsViewModel: PermissionsViewModel) {
+
+
+        val isAccessibilityGranted by permissionsViewModel.isAccessibilityGranted.observeAsState(
+            initial = false
+        )
+        val isUsageStatsGranted by permissionsViewModel.isUsageStatsGranted.observeAsState(initial = false)
+
 
         val context = LocalContext.current
 
-        CustomToolBar()
-
-        TimerProgressLayout()
-
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Permissions ",
-            color = Color.White,
-            fontSize = 12.sp,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        PermissionsLayout(text = "Accessibility") {
-            val intent: Intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            context.startActivity(intent)
+        if (!isAccessibilityGranted) {
+            PermissionsLayout(text = "Accessibility") {
+                permissionsViewModel.handleAccessibilityPermission(context)
+            }
         }
 
-        if (!MyAppPermissions.checkUsageStatsPermission(context)) {
-            // Implement further app logic here ...
+        if (!isUsageStatsGranted) {
             Log.e("PermissionUsage: ", "Accepted")
             PermissionsLayout(text = "App Usage") {
-                // Navigate the user to the permission settings
-                Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-                    context.startActivity(this)
-                }
-
+                permissionsViewModel.handleUsageStatsPermission(context)
             }
         }
 
@@ -155,248 +205,226 @@ fun MainScreenLayout(modifier: Modifier = Modifier) {
         }
 
 
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Applications ",
-            color = Color.White,
-            fontSize = 12.sp,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        SelectApplicationLayout(
-            text = "Instagram",
-            image = painterResource(R.drawable.instagram),
-            onUpdate = {
-
-            })
-
-        SelectApplicationLayout(
-            text = "Youtube",
-            image = painterResource(R.drawable.youtube),
-            onUpdate = {
-
-            })
-
     }
-}
 
-@Composable
-private fun SelectApplicationLayout(
-    modifier: Modifier = Modifier,
-    text: String,
-    image: Painter,
-    selected: Boolean = false,
-    onUpdate: (Boolean) -> Unit,
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 4.dp),
-        shape = RoundedCornerShape(50.dp)
+    @Composable
+    private fun SelectApplicationLayout(
+        modifier: Modifier = Modifier,
+        text: String,
+        image: Painter,
+        selected: Boolean = false,
+        onUpdate: (Boolean) -> Unit,
     ) {
-        Row(
-            modifier = Modifier
-                .background(Ui_1)
+        Card(
+            modifier = modifier
                 .fillMaxWidth()
-                .padding(8.dp), verticalAlignment = Alignment.CenterVertically
+                .padding(top = 4.dp),
+            shape = RoundedCornerShape(50.dp)
         ) {
-            Spacer(modifier = Modifier.width(10.dp))
-            Image(
-                painter = image, contentDescription = "Menu",
-                modifier = Modifier.size(30.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = text,
-                color = Color.White,
-                fontSize = 18.sp,
-                modifier = Modifier.weight(weight = 1f),
-                fontWeight = FontWeight.Normal
-            )
+            Row(
+                modifier = Modifier
+                    .background(Ui_1)
+                    .fillMaxWidth()
+                    .padding(8.dp), verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Image(
+                    painter = image, contentDescription = "Menu",
+                    modifier = Modifier.size(30.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = text,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(weight = 1f),
+                    fontWeight = FontWeight.Normal
+                )
 
-            CustomToggleButton(
-                selected = selected, selectedColor = Color.Black,
-                unselectedColor = Color.DarkGray, onUpdate = onUpdate
-            )
+                CustomToggleButton(
+                    selected = selected, selectedColor = Color.Black,
+                    unselectedColor = Color.DarkGray, onUpdate = onUpdate
+                )
 
 
+            }
         }
     }
-}
 
 
-@Composable
-private fun PermissionsLayout(
-    modifier: Modifier = Modifier,
-    text: String, onClick: () -> Unit
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 4.dp),
-        shape = RoundedCornerShape(50.dp)
+    @Composable
+    private fun PermissionsLayout(
+        modifier: Modifier = Modifier,
+        text: String, onClick: () -> Unit
     ) {
-        Row(
-            modifier = Modifier
-                .background(Ui_1)
+        Card(
+            modifier = modifier
                 .fillMaxWidth()
-                .padding(8.dp), verticalAlignment = Alignment.CenterVertically
+                .padding(top = 4.dp),
+            shape = RoundedCornerShape(50.dp)
         ) {
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Text(
-                text = text,
-                color = Color.White,
-                fontSize = 18.sp,
-                modifier = Modifier.weight(weight = 1f),
-                fontWeight = FontWeight.Normal
-            )
-
-            Button(
-                onClick = onClick,
-                modifier = Modifier.height(32.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+            Row(
+                modifier = Modifier
+                    .background(Ui_1)
+                    .fillMaxWidth()
+                    .padding(8.dp), verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Allow", fontSize = 11.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Text(
+                    text = text,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(weight = 1f),
+                    fontWeight = FontWeight.Normal
+                )
+
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier.height(32.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                ) {
+                    Text(text = "Allow", fontSize = 11.sp)
+                }
+
+
+            }
+        }
+    }
+
+
+    @Composable
+    private fun CustomToolBar(modifier: Modifier = Modifier) {
+
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(50.dp),
+        ) {
+            Row(
+                Modifier
+                    .background(Color.White)
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Image(
+                    painter = painterResource(R.drawable.baseline_menu_24),
+                    contentDescription = "Menu",
+                    colorFilter = ColorFilter.tint(color = Color.Black),
+                    modifier = Modifier.size(30.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = stringResource(R.string.app_name, "Scrolling Block"),
+                    color = Color.Black,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
-
-        }
-    }
-}
-
-
-@Composable
-private fun CustomToolBar(modifier: Modifier = Modifier) {
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(50.dp),
-    ) {
-        Row(
-            Modifier
-                .background(Color.White)
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(10.dp))
-            Image(
-                painter = painterResource(R.drawable.baseline_menu_24), contentDescription = "Menu",
-                colorFilter = ColorFilter.tint(color = Color.Black),
-                modifier = Modifier.size(30.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = stringResource(R.string.app_name, "Scrolling Block"),
-                color = Color.Black,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
-            )
         }
 
     }
 
-}
+
+    @Composable
+    fun TimerProgressLayout(modifier: Modifier = Modifier) {
 
 
-@Composable
-fun TimerProgressLayout(modifier: Modifier = Modifier) {
+        Spacer(modifier = Modifier.height(10.dp))
 
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.width(10.dp))
 
-    Spacer(modifier = Modifier.height(10.dp))
-
-    Row(modifier = Modifier.fillMaxWidth()) {
-        Spacer(modifier = Modifier.width(10.dp))
-
-        Column(
-            modifier = Modifier
-                .wrapContentSize()
-                .background(Color.Black)
-        ) {
-            Box(
-                modifier = Modifier.wrapContentSize()
+            Column(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .background(Color.Black)
             ) {
-                SimpleArcProgressbar(progressColor = Ui_RED_1, progress = 10f)
+                Box(
+                    modifier = Modifier.wrapContentSize()
+                ) {
+                    SimpleArcProgressbar(progressColor = Ui_RED_1, progress = 10f)
 
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Left",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center,
+                        )
+
+                        Text(
+                            text = "00h 05m",
+                            color = Ui_2,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+
+
+                }
+
+                Row(
+                    modifier = Modifier.align(alignment = Alignment.CenterHorizontally)
                 ) {
                     Text(
-                        text = "Left",
+                        text = "Total time: ",
                         color = Color.White,
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         textAlign = TextAlign.Center,
                     )
 
                     Text(
                         text = "00h 05m",
-                        color = Ui_2,
+                        color = Color.White,
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
                     )
                 }
+            }
+            Spacer(modifier = Modifier.width(15.dp))
 
+            Column(
+                modifier = Modifier
+                    .background(Color.Black)
+                    .padding(top = 30.dp),
 
+                ) {
+                CustomPlatformUsageText()
+                CustomPlatformUsageText()
             }
 
-            Row(
-                modifier = Modifier.align(alignment = Alignment.CenterHorizontally)
-            ) {
-                Text(
-                    text = "Total time: ",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                )
+            Spacer(modifier = Modifier.width(5.dp))
 
-                Text(
-                    text = "00h 05m",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                )
-            }
+
         }
-        Spacer(modifier = Modifier.width(15.dp))
-
-        Column(
-            modifier = Modifier
-                .background(Color.Black)
-                .padding(top = 30.dp),
-
-            ) {
-            CustomPlatformUsageText()
-            CustomPlatformUsageText()
-        }
-
-        Spacer(modifier = Modifier.width(5.dp))
 
 
     }
 
+    @Composable
+    fun CustomPlatformUsageText(modifier: Modifier = Modifier) {
+        Row(
 
-}
+        ) {
+            Text(
+                text = "Shorts: ",
+                color = Color.White,
+                fontSize = 16.sp,
+                textAlign = TextAlign.Start,
+            )
 
-@Composable
-fun CustomPlatformUsageText(modifier: Modifier = Modifier) {
-    Row(
-
-    ) {
-        Text(
-            text = "Shorts: ",
-            color = Color.White,
-            fontSize = 16.sp,
-            textAlign = TextAlign.Start,
-        )
-
-        Text(
-            text = "00h 05m",
-            color = Ui_RED_1,
-            fontSize = 16.sp,
-            textAlign = TextAlign.Start,
-        )
+            Text(
+                text = "00h 05m",
+                color = Ui_RED_1,
+                fontSize = 16.sp,
+                textAlign = TextAlign.Start,
+            )
+        }
     }
 }

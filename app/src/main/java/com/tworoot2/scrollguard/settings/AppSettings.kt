@@ -17,7 +17,7 @@ object AppSettings {
             if (appInfo.flags != ApplicationInfo.FLAG_SYSTEM) {
                 appInfoMap[appInfo.packageName] =
                     context.packageManager.getApplicationLabel(appInfo).toString()
-                Log.e("AppInfoName", appInfo.packageName)
+//                Log.e("AppInfoName", appInfo.packageName)
             }
         }
         return appInfoMap

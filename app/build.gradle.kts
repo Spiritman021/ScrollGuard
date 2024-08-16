@@ -1,9 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-}
 
-//Initial commit -  added the scroll/swipe detecting feature using Android's AccessibilityService class
+    id("com.google.devtools.ksp")
+    kotlin("kapt")
+    id("com.google.dagger.hilt.android")
+
+}
 
 android {
     namespace = "com.tworoot2.scrollguard"
@@ -62,6 +65,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.runtime.livedata)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -69,4 +73,20 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    //room
+    	implementation("androidx.room:room-runtime:2.6.1")
+    	annotationProcessor("androidx.room:room-compiler:2.6.1")
+    	implementation("androidx.room:room-ktx:2.6.1")
+    	ksp("androidx.room:room-compiler:2.6.1")
+
+    	//hilt
+    	implementation("com.google.dagger:hilt-android:2.49")
+    	kapt("com.google.dagger:hilt-android-compiler:2.49")
+
+    	//navigation
+    	implementation("androidx.navigation:navigation-compose:2.7.6")
+
+    	//lifecycle
+    	implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
 }
