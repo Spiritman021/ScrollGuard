@@ -8,7 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.tworoot2.scrollguard.settings.MyAppPermissions
-import com.tworoot2.scrollguard.settings.YourAccessibilityService
+import com.tworoot2.scrollguard.settings.MyAccessibilityService
 
 class PermissionsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -21,7 +21,7 @@ class PermissionsViewModel(application: Application) : AndroidViewModel(applicat
     fun checkPermissions() {
         _isAccessibilityGranted.value = MyAppPermissions.isAccessibilityServiceEnabled(
             getApplication(),
-            YourAccessibilityService::class.java
+            MyAccessibilityService::class.java
         )
         _isUsageStatsGranted.value = MyAppPermissions.checkUsageStatsPermission(getApplication())
     }

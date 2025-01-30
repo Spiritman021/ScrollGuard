@@ -6,6 +6,7 @@ plugins {
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
 
+
 }
 
 android {
@@ -75,18 +76,21 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     //room
-    	implementation("androidx.room:room-runtime:2.6.1")
-    	annotationProcessor("androidx.room:room-compiler:2.6.1")
-    	implementation("androidx.room:room-ktx:2.6.1")
-    	ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
-    	//hilt
-    	implementation("com.google.dagger:hilt-android:2.49")
-    	kapt("com.google.dagger:hilt-android-compiler:2.49")
+    //hilt
+    implementation("com.google.dagger:hilt-android:2.49")
+    kapt("com.google.dagger:hilt-android-compiler:2.49")
 
-    	//navigation
-    	implementation("androidx.navigation:navigation-compose:2.7.6")
+    //navigation
+    implementation("androidx.navigation:navigation-compose:2.7.6")
 
-    	//lifecycle
-    	implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+    //lifecycle
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+
+    implementation ("com.google.accompanist:accompanist-drawablepainter:0.36.0")
+
 }
